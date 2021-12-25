@@ -22,7 +22,7 @@
     const socket = io("https://nimit-webrtc-socket.herokuapp.com/");
     
     // console.log(socket)
-    const configuration = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] }
+    const configuration = { iceServers: [{ url: "turn:turn-server-mobile.com:80", credential: "my_password", username: "my_username" }, { url: "turn:163.172.71.160:3478", credential: "my_password", username: "my_username" }] }
     const peerConnection = new RTCPeerConnection(configuration);
 
     let localStream = null;
