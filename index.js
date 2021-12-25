@@ -58,8 +58,9 @@ io.on('connection', (socket) => {
         io.emit('message', data);
     })
 });
-
-server.listen(3000, function () {
+// Establishing the port
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, function () {
     const host = server.address().address
     const port = server.address().port
 
