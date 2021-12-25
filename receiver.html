@@ -62,7 +62,7 @@
 
     async function onAnswer() {
         if (offer) {
-            await candidate();
+            // await candidate();
             peerConnection.ontrack = gotRemoteStream;
 
             peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
