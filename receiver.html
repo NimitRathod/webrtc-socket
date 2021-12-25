@@ -20,7 +20,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
     let btnReciver = document.getElementById('btnReciver');
-    const socket = io("localhost:3000/");
+    const socket = io("https://nimit-webrtc-socket.herokuapp.com/");
     // console.log(socket)
     const configuration = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] }
     const peerConnection = new RTCPeerConnection(configuration);
