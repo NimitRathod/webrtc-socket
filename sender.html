@@ -58,7 +58,7 @@
     })
 
     async function onCall() {
-        // await candidate();
+        await candidate();
         peerConnection.ontrack = gotRemoteStream;
         await peerConnection.addStream(localStream);
         const offer = await peerConnection.createOffer();
