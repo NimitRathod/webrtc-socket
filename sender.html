@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sender</title>
+</head>
+
+<body>
+    <h4>Sender</h4>
+    <video id="localStream" widht="300" height="300" autoplay playsinline controls></video>
+    <video id="remoteStream" widht="300" height="300" autoplay playsinline controls style="display: none;"></video>
+    <br>
+    <button id="onCall" onclick="onCall()">Call</button>
+</body>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io("localhost:3000/");
+    // const socket = io("192.168.1.176:3000/");
+    // console.log(socket)
+    const configuration = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] }
+    const peerConnection = new RTCPeerConnection(configuration);
+
+    let localStream = null;
+    let remoteStream = null;
+    const constraints = {
+        'video': true,
+        'audio': true
+    }
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+            // console.log('Got MediaStream:', stream);
+            localStream = stream;
+            document.getElementById('localStream').srcObject = localStream;
+        })
+        .catch(error => {
+            console.error('Error accessing media devices.', error);
+        });
+
+    socket.on('message', message => {
+        if (message.answer) {
+            console.log(message);
+            const remoteDesc = new RTCSessionDescription(message.answer);
+            peerConnection.setRemoteDescription(remoteDesc);
+        }
+
+        if (message.iceCandidate) {
+            try {
+                peerConnection.addIceCandidate(message.iceCandidate);
+            } catch (e) {
+                console.error('Error adding received ice candidate', e);
+            }
+        }
+    })
+
+    async function onCall() {
+        await candidate();
+        peerConnection.ontrack = gotRemoteStream;
+        await peerConnection.addStream(localStream);
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        socket.emit('message', { 'offer': offer });
+    }
+
+    function candidate() {
+        peerConnection.onicecandidate = function (event) {
+            console.log('onicecandidate: ', event)
+            if (event.candidate) {
+                socket.emit('message', { 'iceCandidate': event.candidate });
+            }
+        };
+    }
+
+    function gotRemoteStream(event) {
+        console.log('got remote stream: ', event);
+        document.getElementById('remoteStream').style = "display:block;";
+        document.getElementById('remoteStream').srcObject = event.streams[0];
+    }
+</script>
+
+</html>

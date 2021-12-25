@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reciver
+
+    </title>
+</head>
+
+<body>
+    <h4>Reciver</h4>
+    <video id="localStream" widht="300" height="300" autoplay playsinline controls></video>
+    <video id="remoteStream" widht="300" height="300" autoplay playsinline controls style="display: none;"></video>
+    <br> <button id="btnReciver" onclick="onAnswer()" style="display: none;">Recived Call</button>
+</body>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    let btnReciver = document.getElementById('btnReciver');
+    const socket = io("localhost:3000/");
+    // console.log(socket)
+    const configuration = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] }
+    const peerConnection = new RTCPeerConnection(configuration);
+
+    let localStream = null;
+    let remoteStream = null;
+    let offer = null;
+
+    const constraints = {
+        'video': true,
+        'audio': true
+    }
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+            // console.log('Got MediaStream:', stream);
+            localStream = stream;
+            document.getElementById('localStream').srcObject = localStream;
+            peerConnection.addStream(localStream);
+        })
+        .catch(error => {
+            console.error('Error accessing media devices.', error);
+        });
+
+    socket.on('message', message => {
+        if (message.offer) {
+            console.log(message);
+            offer = message.offer;
+            btnReciver.style = "display: block;";
+        }
+
+        if (message.iceCandidate) {
+            try {
+                peerConnection.addIceCandidate(message.iceCandidate);
+            } catch (e) {
+                console.error('Error adding received ice candidate', e);
+            }
+        }
+    });
+
+    async function onAnswer() {
+        if (offer) {
+            await candidate();
+            peerConnection.ontrack = gotRemoteStream;
+
+            peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('message', { 'answer': answer });
+        }
+    }
+
+    function candidate() {
+        peerConnection.onicecandidate = function (event) {
+            console.log('onicecandidate: ', event.candidate)
+            if (event.candidate) {
+                socket.emit('message', { 'iceCandidate': event.candidate });
+            }
+        };
+    }
+
+    function gotRemoteStream(event) {
+        console.log('got remote stream: ', event);
+        document.getElementById('remoteStream').style = "display:block;";
+        document.getElementById('remoteStream').srcObject = event.streams[0];
+    }
+</script>
+
+</html>
